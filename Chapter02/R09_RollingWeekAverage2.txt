@@ -1,0 +1,118 @@
+Rolling Week Average 2 = 
+    VAR __Date = MAX('R09_Sales'[Date])
+    VAR __Sales = ALL('R09_Sales')
+    VAR __WeeksBack = 4
+    VAR __WeeksForward = -1
+    VAR __Calendar = 
+        ADDCOLUMNS(
+            CALENDAR(
+                __Date - 7 * __WeeksBack,
+                __Date + 7 * __WeeksForward
+            ),
+            "__WeekStarting",
+                VAR __WeekStarting = 
+                    VAR __WeekDay = 1
+                    VAR __Date = [Date]
+                    VAR __WeekNum = WEEKNUM(__Date)
+                    VAR __Year = YEAR(__Date)
+                    VAR __Calendar =
+                        ADDCOLUMNS(
+                            CALENDAR(
+                                DATE(__Year - 1 ,1 , 1),
+                                DATE(__Year ,12 , 31)
+                            ),
+                            "__WeekNum",WEEKNUM([Date]),
+                            "__WeekDay",WEEKDAY([Date])
+                        ) 
+                    VAR __WeekDate =
+                        MINX(
+                            FILTER(
+                                __Calendar,
+                                YEAR([Date]) = __Year &&
+                                    [__WeekNum]=__WeekNum &&
+                                        [__WeekDay] = __WeekDay
+                            ),
+                            [Date]
+                        )
+                    VAR __WeekDate1 =
+                        IF(
+                            ISBLANK(__WeekDate),
+                            MINX(
+                                FILTER(
+                                    __Calendar,
+                                    YEAR([Date]) = __Year - 1 &&
+                                        [__WeekNum] = MAXX(__Calendar,[__WeekNum]) &&
+                                            [__WeekDay] = __WeekDay
+                                ),
+                                [Date]
+                            ),
+                            __WeekDate
+                        )
+                    RETURN
+                        __WeekDate1
+                RETURN __WeekStarting,
+            "__WeekEnding",
+                VAR __WeekEnding = 
+                    VAR __WeekDay = 7
+                    VAR __Date = [Date]
+                    VAR __WeekNum = WEEKNUM(__Date)
+                    VAR __Year = YEAR(__Date)
+                    VAR __Calendar =
+                        ADDCOLUMNS(
+                            CALENDAR(
+                                DATE(__Year ,1 , 1),
+                                DATE(__Year + 1 ,12 , 31)
+                            ),
+                            "__WeekNum",WEEKNUM([Date]),
+                            "__WeekDay",WEEKDAY([Date])
+                        ) 
+                    VAR __WeekDate =
+                        MINX(
+                            FILTER(
+                                __Calendar,
+                                YEAR([Date]) = __Year &&
+                                    [__WeekNum]=__WeekNum &&
+                                        [__WeekDay] = __WeekDay
+                            ),
+                            [Date]
+                        )
+                    VAR __WeekDate1 =
+                        IF(
+                            ISBLANK(__WeekDate),
+                            MINX(
+                                FILTER(
+                                    __Calendar,
+                                    YEAR([Date]) = __Year + 1 &&
+                                        [__WeekNum] = MINX(__Calendar,[__WeekNum]) &&
+                                            [__WeekDay] = __WeekDay
+                                ),
+                                [Date]
+                            ),
+                            __WeekDate
+                        )
+                    RETURN
+                        __WeekDate1
+                RETURN
+                    __WeekEnding
+        )
+    VAR __LookupDateStart = __Date - 7 * __WeeksBack
+    VAR __LookupDateEnd = __Date + 7 * __WeeksForward
+    VAR __RollingWeekStartDate = 
+        MINX(
+            FILTER(__Calendar,[Date] = __LookupDateStart),
+            [__WeekStarting]
+        )
+    VAR __RollingWeekEndDate = 
+        MAXX(
+            FILTER(__Calendar,[Date] = __LookupDateEnd),
+            [__WeekEnding]
+        )
+RETURN
+    AVERAGEX(
+        FILTER(
+            __Sales,
+            [Date] >= __RollingWeekStartDate &&
+                [Date] <= __RollingWeekEndDate
+        ),
+        [Value]
+    )

@@ -1,0 +1,58 @@
+Recovered Customers = 
+    VAR __Threshold = 1
+    VAR __ThresholdUnit = "YEARS"
+    VAR __Month = MAX('R03_Dates'[Month])
+    VAR __Year = MAX('R03_Dates'[Year])
+    VAR __MonthStart = DATE(__Year, __Month, 1)
+    VAR __MonthEnd = MAX('R03_Dates'[Date])
+    VAR __PreviousCustomers = 
+        SUMMARIZE(
+            FILTER(
+                'R03_Table',
+                [Date] < __MonthStart
+            ),
+            [Customer],
+            "__FirstPurchase",MIN([Date]),
+            "__LastPurchase",MAX([Date])
+        )
+    VAR __PreviousCustomers1 = 
+        ADDCOLUMNS(
+            FILTER(
+                __PreviousCustomers,
+                MONTH([__FirstPurchase]) <> __Month && YEAR([__FirstPurchase]) <> __Year
+            ),
+            "__LostDate",
+            SWITCH(
+                __ThresholdUnit,
+                "DAYS",[__LastPurchase] + __Threshold,
+                "MONTHS",EOMONTH([__LastPurchase],__Threshold),
+                "YEARS",DATE(YEAR([__LastPurchase]) + __Threshold,MONTH([__LastPurchase]),1)
+            )
+        )
+    VAR __LostCustomers = 
+        DISTINCT(
+            SELECTCOLUMNS(
+                FILTER(
+                    __PreviousCustomers1,
+                    [__LostDate] < __MonthStart
+                ),
+                "__Customer",[Customer]
+            )
+        )
+    VAR __CurrentCustomers = 
+        DISTINCT(
+            SELECTCOLUMNS(
+                FILTER('R03_Table',
+                    [Date] >= __MonthStart && 
+                        [Date] <= __MonthEnd
+                ),
+            "__Customer",[Customer]
+            )
+        )
+    VAR __RecoveredCustomers = 
+        ADDCOLUMNS(
+            __LostCustomers,
+            "__IsCurrent",[__Customer] IN __CurrentCustomers
+        )
+RETURN
+    COUNTROWS(FILTER(__RecoveredCustomers,[__IsCurrent] = TRUE()))

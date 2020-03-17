@@ -1,0 +1,39 @@
+Employment Costs = 
+    VAR __StartPeriod = MIN('R04_Calendar'[Date])
+    VAR __EndPeriod = MAX('R04_Calendar'[Date])
+    VAR __Year = YEAR(__StartPeriod)
+    VAR __DaysInYear = DATEDIFF(DATE(__Year,1,1), DATE(__Year,12,31),DAY)+1
+    VAR __Employees = 
+        ADDCOLUMNS(
+            ADDCOLUMNS(
+                ADDCOLUMNS(
+                    FILTER(
+                        'R04_Table',
+                        [Hire Date] <= __EndPeriod &&
+                        ([Leave Date] >= __StartPeriod || 
+                            [Leave Date] = DATE(9999,1,1)
+                        )
+                    ),
+                    "__MinDate",
+                        IF([Hire Date] > __StartPeriod, 
+                            [Hire Date], 
+                            __StartPeriod
+                        ),
+                    "__MaxDAte",
+                        IF([Leave Date] < __EndPeriod, 
+                            [Leave Date], 
+                            __EndPeriod
+                        )
+                ),
+                "__DaysInPeriod",([__MaxDate] - [__MinDate]) * 1 + 1
+            ),
+            "__TotalCostInPeriod",
+            [__DaysInPeriod] * [Annual Salary] / __DaysInYear
+        )
+    VAR __TotalCostsInPeriod = 
+        SUMX(
+            __Employees,
+            [__TotalCostInPeriod]
+        ) * [Employee Overhead Cost Factor]
+RETURN
+    __TotalCostsInPeriod

@@ -1,0 +1,38 @@
+FTE = 
+    VAR __StartPeriod = MIN('R04_Calendar'[Date])
+    VAR __EndPeriod = MAX('R04_Calendar'[Date])
+    VAR __TotalDaysInPeriod = DATEDIFF(__StartPeriod, __EndPeriod,DAY) + 1
+    VAR __Employees = 
+        ADDCOLUMNS(
+            ADDCOLUMNS(
+                FILTER(
+                    'R04_Table',
+                    [Hire Date] <= __EndPeriod &&
+                    ([Leave Date] >= __StartPeriod || 
+                        [Leave Date] = DATE(9999,1,1)
+                    )
+                ),
+                "__MinDate",
+                    IF([Hire Date] > __StartPeriod, 
+                        [Hire Date], 
+                        __StartPeriod
+                    ),
+                "__MaxDAte",
+                    IF([Leave Date] < __EndPeriod, 
+                        [Leave Date], 
+                        __EndPeriod
+                    )
+            ),
+            "__DaysInPeriod",([__MaxDate] - [__MinDate]) * 1 + 1
+        )
+    VAR __FullTimeEmployees = 
+        COUNTROWS(
+            FILTER(__Employees,[__DaysInPeriod] = __TotalDaysInPeriod)
+        )
+    VAR __PartTimeEmployees = 
+        SUMX(
+            FILTER(__Employees,[__DaysInPeriod] < __TotalDaysInPeriod),
+            [__DaysInPeriod]
+        ) / __TotalDaysInPeriod
+RETURN
+    __FullTimeEmployees + __PartTimeEmployees

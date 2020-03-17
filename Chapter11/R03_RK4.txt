@@ -1,0 +1,89 @@
+RK4 = 
+    VAR tCurrent = MAX('R03_Table'[t])
+    VAR t=0
+    VAR w = 0.5
+    VAR h = 0.5
+    VAR step1 = 
+        IF(
+            tCurrent=0,
+            w,
+            VAR k1t = t
+            VAR t = t+h
+            VAR k1w = w
+            VAR k1 = h*(k1w - k1t^2 + 1)
+            VAR k2t = k1t + h/2
+            VAR k2w = k1w + k1/2
+            VAR k2 = h*(k2w - k2t^2 + 1)
+            VAR k3t = k1t + h/2
+            VAR k3w = k1w + k2/2
+            VAR k3 = h*(k3w - k3t^2 + 1)
+            VAR k4t = k1t + h
+            VAR k4w = k1w + k3
+            VAR k4 = h*(k4w - k4t^2 + 1)
+            VAR w = k1w + (k1 + 2*k2 + 2*k3 + k4)/6
+
+            VAR step2 = 
+                IF(
+                    tCurrent=h,
+                    w,
+                    VAR k1t = t
+                    VAR t = t+h
+                    VAR k1w = w
+                    VAR k1 = h*(k1w - k1t^2 + 1)
+                    VAR k2t = k1t + h/2
+                    VAR k2w = k1w + k1/2
+                    VAR k2 = h*(k2w - k2t^2 + 1)
+                    VAR k3t = k1t + h/2
+                    VAR k3w = k1w + k2/2
+                    VAR k3 = h*(k3w - k3t^2 + 1)
+                    VAR k4t = k1t + h
+                    VAR k4w = k1w + k3
+                    VAR k4 = h*(k4w - k4t^2 + 1)
+                    VAR w = k1w + (k1 + 2*k2 + 2*k3 + k4)/6
+
+                    VAR step3 = 
+                        IF(
+                            tCurrent=2*h,
+                            w,
+                            VAR k1t = t
+                            VAR t = t+h
+                            VAR k1w = w
+                            VAR k1 = h*(k1w - k1t^2 + 1)
+                            VAR k2t = k1t + h/2
+                            VAR k2w = k1w + k1/2
+                            VAR k2 = h*(k2w - k2t^2 + 1)
+                            VAR k3t = k1t + h/2
+                            VAR k3w = k1w + k2/2
+                            VAR k3 = h*(k3w - k3t^2 + 1)
+                            VAR k4t = k1t + h
+                            VAR k4w = k1w + k3
+                            VAR k4 = h*(k4w - k4t^2 + 1)
+                            VAR w = k1w + (k1 + 2*k2 + 2*k3 + k4)/6
+
+                            VAR step4 = 
+                                IF(
+                                    tCurrent=3*h,
+                                    w,
+                                    VAR k1t = t
+                                    VAR t = t+h
+                                    VAR k1w = w
+                                    VAR k1 = h*(k1w - k1t^2 + 1)
+                                    VAR k2t = k1t + h/2
+                                    VAR k2w = k1w + k1/2
+                                    VAR k2 = h*(k2w - k2t^2 + 1)
+                                    VAR k3t = k1t + h/2
+                                    VAR k3w = k1w + k2/2
+                                    VAR k3 = h*(k3w - k3t^2 + 1)
+                                    VAR k4t = k1t + h
+                                    VAR k4w = k1w + k3
+                                    VAR k4 = h*(k4w - k4t^2 + 1)
+                                    VAR w = k1w + (k1 + 2*k2 + 2*k3 + k4)/6
+                                    RETURN w
+                                )
+                            RETURN step4
+                        )
+                    RETURN step3
+                )
+            RETURN step2
+        )
+RETURN step1

@@ -1,0 +1,75 @@
+SequentialWeek2 = 
+    VAR __Date = 'R08_Calendar'[Date] // The working date, edit if column is not Date
+    VAR __Year = YEAR(__Date) // Get the working date 
+    VAR __Calendar = // Create calendar table with year and weeknum
+        ADDCOLUMNS(
+            ALL('R08_Calendar'), // Edit table name to match
+            "__Year",
+            YEAR('R08_Calendar'[Date]), // Edit table and column to match
+            "__WeekNum",
+            WEEKNUM('R08_Calendar'[Date]) // Edit table and column to match
+        )
+    VAR __FirstYear = MINX(__Calendar,[__Year]) // Determine the first year in our table
+    VAR __WeekNum = // Get the current working week number
+        MAXX(
+            FILTER(
+                __Calendar,
+                [Date] = __Date
+            ),
+            [__WeekNum]
+        )
+    VAR __MaxWeeks = // Create a table of years and their max week numbers
+        GROUPBY(
+            __Calendar,
+            [__Year],
+            "__MaxWeek",
+            MAXX(
+                CURRENTGROUP(),
+                [__WeekNum]
+            )
+        )
+    VAR __Start = // Use __MaxWeeks table to get starting point for week number 
+        SUMX(
+            FILTER(
+                __MaxWeeks,
+                [__Year]<__Year
+            ),
+            [__MaxWeek]
+        )
+    VAR __Calendar1 = // Add maximum weeknum column for each year
+        ADDCOLUMNS(
+            __Calendar,
+            "__MaxWeek",
+            MAXX(
+                FILTER(
+                    __Calendar,
+                    [__Year] = EARLIER([__Year])
+                ),
+                [__WeekNum]
+            )
+        )
+    VAR __SubtractTable = // Create table of number of days in last week of years
+        GROUPBY(
+            FILTER(
+                __Calendar1,
+                [__Year] < __Year && 
+                    [__WeekNum] = [__MaxWeek]
+            ),
+            [__Year],
+            "__NumWeekDays",
+            COUNTX(CURRENTGROUP(),[Date])
+        )
+    VAR __Subtract = // Get the number of years without 7 days in their last week
+        COUNTROWS(
+            FILTER(
+                __SubtractTable,
+                [__NumWeekDays]<7
+            )
+        )
+    VAR __Sequential = 
+        IF(
+            __Year=__FirstYear,
+            __WeekNum, // If first year, then just the week number
+            __Start + __WeekNum - __Subtract // Otherwise, __Start + current week number - __Subtract
+        )
+RETURN __Sequential

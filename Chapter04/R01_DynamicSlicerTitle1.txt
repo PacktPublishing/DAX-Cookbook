@@ -1,0 +1,76 @@
+Dynamic Slicer Title1 = 
+    VAR __ALLTEXT = "All"
+    VAR __NONETEXT = "No"
+    VAR __DIRECTFILTERPRETEXT = "You have chosen "
+    VAR __CROSSFILTERPRETEXT = "You have filtered down to "
+    VAR __POSTTEXT = " brand(s)."
+    VAR __CONCATENATE_TEXT = ", "
+    VAR __LASTCONCATENATE_TEXT = " and "
+    VAR __TOOMANY_PRETEXT = " and "
+    VAR __TOOMANY_POSTTEXT = " more"
+    VAR __USEPERCENT = FALSE()
+    VAR __PERCENTTEXT = " of"
+    VAR __PERCENTZEROTEXT = "0.00%"
+    VAR __USEMULTIPLECOUNT = FALSE()
+    VAR __USEMULTIPLECOUNTEXTENDED = FALSE()
+    VAR __USEMULTIPLECOUNTEXTENDEDTEXT = " of "
+    VAR __USESIMPLEMULTIPLETEXT = FALSE()
+    VAR __SIMPLEMULTIPLETEXT = "Multiple" 
+    VAR __TOOMANY_MAX = 4
+    VAR __TOTAL_ROWS = COUNTROWS(DISTINCT(ALL('R01_Table'[Brand])))
+    VAR __CURRENT_ROWS = COUNTROWS(DISTINCT('R01_Table'[Brand]))
+    VAR __MAINTEXT = 
+        IF(
+            __USEPERCENT,
+            VAR __PERCENT = DIVIDE(__CURRENT_ROWS,__TOTAL_ROWS,0)
+                RETURN 
+                    IF(
+                        ISBLANK(__PERCENT),
+                        __PERCENTZEROTEXT & __PERCENTTEXT,
+                        FORMAT(__PERCENT,"Percent") & __PERCENTTEXT
+                    ),
+            SWITCH(
+                TRUE(),
+                __CURRENT_ROWS = __TOTAL_ROWS,__ALLTEXT,
+                __CURRENT_ROWS = 0 ,__NONETEXT,
+                __CURRENT_ROWS = 1 , MAX('R01_Table'[Brand]),
+                __CURRENT_ROWS < __TOOMANY_MAX,
+                    CONCATENATEX(
+                        TOPN(__CURRENT_ROWS - 1,DISTINCT('R01_Table'[Brand])),
+                        [Brand],
+                        __CONCATENATE_TEXT
+                    ) & 
+                        __LASTCONCATENATE_TEXT & 
+                            LASTNONBLANK(DISTINCT('R01_Table'[Brand]),TRUE()),
+                IF(
+                    __USESIMPLEMULTIPLETEXT,
+                    __SIMPLEMULTIPLETEXT,
+                    IF(
+                        __USEMULTIPLECOUNT,
+                        IF(
+                            __USEMULTIPLECOUNTEXTENDED,
+                            __CURRENT_ROWS & __USEMULTIPLECOUNTEXTENDEDTEXT & __TOTAL_ROWS,
+                            __CURRENT_ROWS
+                        ),
+                        VAR __OVERAGE = __CURRENT_ROWS - __TOOMANY_MAX + 1
+                        RETURN 
+                            CONCATENATEX(
+                                TOPN(__TOOMANY_MAX - 1,DISTINCT('R01_Table'[Brand])),
+                                [Brand],
+                                __CONCATENATE_TEXT
+                        ) & __TOOMANY_PRETEXT & __OVERAGE & __TOOMANY_POSTTEXT
+                    )
+                )
+            )
+        )
+    VAR __PRETEXT = 
+        IF(
+            ISFILTERED('R01_Table'[Brand]),
+            __DIRECTFILTERPRETEXT,
+            IF(
+                ISCROSSFILTERED('R01_Table'[Brand]),
+                __CROSSFILTERPRETEXT,
+                BLANK()
+            )
+        )
+RETURN __PRETEXT & __MAINTEXT & __POSTTEXT
