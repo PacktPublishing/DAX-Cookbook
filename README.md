@@ -40,7 +40,7 @@ R05_summarizedTable = SUMMARIZE(
 **Following is what you need for this book:**
 Business users, BI developers, data analysts, and SQL users who are looking for solutions to the challenges faced while solving analytical operations using DAX techniques and patterns will find this book useful. Basic knowledge of the DAX language and Microsoft services is mandatory.
 
-With the following software and hardware list you can run all code files present in the book (Chapter 1-11).
+With the following software and hardware list you can run all code files present in the book (Chapter 1-13).
 
 ### Software and Hardware List
 
